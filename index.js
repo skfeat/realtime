@@ -72,7 +72,7 @@ setInterval(async () => {
   } catch (error) {
     console.error('Error resetting view values:', error);
   }
-},5*60*1000); 
+},60*60*1000); 
     app.listen(3000, () => {
       console.log(`Server is running on http://localhost:3000`);
     });
