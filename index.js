@@ -1,12 +1,14 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const cron = require('node-cron');
 const app = express();
+
 app.use(express.json());
 app.use(cors());
 
 // Connection URI
-const uri = 'mongodb+srv://skfeat:Raj1775@cluster0.clqoh73.mongodb.net/RealTimeData';
+const uri = 'mongodb+srv://skfeat:Raj1775@cluster0.clqoh73.mongodb.net/database';
 
 // Connect to the MongoDB cluster using Mongoose
 mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -14,34 +16,23 @@ mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
     console.log('Connected to MongoDB using Mongoose');
 
     const yourSchema = new mongoose.Schema({
-      view: { type: Number, default: 0 },
-      timeLeft: { type: Number, default: 5 * 60 } // 5 minutes in seconds
+      view: { type: Number, default: 0 }
     });
 
     const YourModel = mongoose.model('YourModel', yourSchema);
   
-    // Middleware to update timeLeft
-    const updateTimer = setInterval(async () => {
+
+
+    // Schedule the reset of 'view' field to zero every midnight
+    cron.schedule('0 0 * * *', async () => {
       try {
-        // Find and update all documents in the collection
-      
-        const updatedDocuments = await YourModel.updateMany({}, { $inc: { timeLeft: -1 } });
-
-        // Reset timeLeft to 300 seconds (5 minutes) when it reaches 0
-        await YourModel.updateMany({ timeLeft: { $lte: 0 } }, { $set: { timeLeft: 300 } });
-        await YourModel.updateMany({ timeLeft: 1 }, { $set: { view: 0 } });
-        console.log(`TimeLeft values updated.`);
+        // Reset the 'view' field to zero for all documents
+        await YourModel.updateMany({}, { $set: { view: 0 } });
+        console.log('View reset to zero successfully.');
       } catch (error) {
-        console.error('Error updating timeLeft:', error);
+        console.error('Error resetting view:', error);
       }
-    }, 1000); // Update every second
-
-    // Handle server shutdown to clear the interval
-    process.on('SIGINT', () => {
-      clearInterval(updateTimer);
-      process.exit();
     });
-
     app.get('/updateview', async (req, res) => {
       try {
         // Find the document and update the 'view' field by incrementing it by 1
